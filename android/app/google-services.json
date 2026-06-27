@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1096270919792",
+    "project_id": "mystudyai-ba988",
+    "storage_bucket": "mystudyai-ba988.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096270919792:android:0e294e5573ee69e359dcb5",
+        "android_client_info": {
+          "package_name": "com.example.study_ai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuwvoqsDkq68MZk3YgSf-pSzH75LrEIz0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
