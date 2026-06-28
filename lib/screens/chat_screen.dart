@@ -113,18 +113,28 @@ ${controller.text}
 
     String finalMessage = userMessage;
 
-    if (selectedFileName != null) {
+    if (selectedFileName != null &&
+        selectedFileName!.toLowerCase().endsWith(".pdf")) {
       finalMessage = '''
-The user attached a file named:
-$selectedFileName
+PDF CONTENT:
 
-Unfortunately image analysis is not enabled yet.
-
-User question:
 $userMessage
 ''';
     }
 
+    File? imageToSend;
+
+    if (selectedFile != null &&
+        selectedFileName != null &&
+        !selectedFileName!.toLowerCase().endsWith(".pdf")) {
+      imageToSend = selectedFile;
+    }
+
+    if (imageToSend != null) {
+      print("FILE PATH: ${imageToSend.path}");
+    } else {
+      print("NO IMAGE WILL BE SENT");
+    }
     final userChat = ChatMessage(
       text: finalMessage,
       isUser: true,
@@ -132,32 +142,39 @@ $userMessage
       DateTime.now().millisecondsSinceEpoch,
     );
 
-
-
     controller.clear();
 
     setState(() {
       messages.add(userChat);
       isLoading = true;
+
+      // clear UI only
+      selectedFile = null;
+      selectedFileName = null;
+      uploadedFileUrl = null;
     });
 
     await FirestoreService.saveMessage(
       conversationId!,
       userChat,
     );
-    setState(() {
-      selectedFile = null;
-      selectedFileName = null;
-      uploadedFileUrl = null;
-    });
+
     _scrollToBottom();
 
     try {
-      final response =
-      await AIService.sendMessage(
+      // Debug
+      if (imageToSend != null) {
+        print("FILE PATH: ${imageToSend.path}");
+        print("FILE NAME: ${imageToSend.path.split('/').last}");
+        print("IMAGE SENT: true");
+      } else {
+        print("NO IMAGE WILL BE SENT");
+      }
+
+      final response = await AIService.sendMessage(
         message: finalMessage,
         mode: widget.mode,
-        imageFile: selectedFile
+        imageFile: imageToSend,
       );
 
       final aiChat = ChatMessage(
@@ -170,7 +187,6 @@ $userMessage
       if (!mounted) return;
 
       setState(() {
-        messages.removeLast();
         messages.add(aiChat);
         isLoading = false;
         });
@@ -180,17 +196,24 @@ $userMessage
         aiChat,
       );
     } catch (e) {
+      String friendlyError =
+          "Sorry, I couldn't process this file.";
+
+      if (imageToSend == null) {
+        friendlyError =
+        "I couldn't read this PDF. Try another PDF file.";
+      }
+
       final errorChat = ChatMessage(
-        text: "Error: $e",
+        text: friendlyError,
         isUser: false,
-        timestamp:
-        DateTime.now().millisecondsSinceEpoch,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
       );
+
 
       if (!mounted) return;
 
       setState(() {
-        messages.removeLast();
         messages.add(errorChat);
         isLoading = false;
       });
@@ -353,39 +376,57 @@ $userMessage
       body: Column(
         children: [
           Expanded(
-            child: messages.isEmpty
-                ? Center(
-              child: Text(
-                "Start chatting with ${PromptService.getChatTitle(widget.mode)}",
-                style:
-                const TextStyle(
-                  color:
-                  Colors.grey,
-                  fontSize: 16,
-                ),
-              ),
-            )
-                : ListView.builder(
-              controller:
-              scrollController,
-              padding:
-              const EdgeInsets
-                  .all(16),
-              itemCount:
-              messages.length,
-              itemBuilder:
-                  (context,
-                  index) {
-                final msg =
-                messages[
-                index];
+            child: Column(
+              children: [
+                Expanded(
+                  child: messages.isEmpty
+                      ? Center(
+                    child: Text(
+                      "Start chatting with ${PromptService.getChatTitle(widget.mode)}",
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                    ),
+                  )
+                      : ListView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = messages[index];
 
-                return MessageBubble(
-                  text: msg.text,
-                  isUser:
-                  msg.isUser,
-                );
-              },
+                      return MessageBubble(
+                        text: msg.text,
+                        isUser: msg.isUser,
+                      );
+                    },
+                  ),
+                ),
+
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          "AI is thinking...",
+                          style: TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
 

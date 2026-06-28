@@ -31,84 +31,94 @@ Use markdown formatting.
 
       case ChatMode.summary:
         return '''
-You are a study notes generator.
+Summarize the content using this format:
 
-RULES:
-- Use Markdown.
-- Use headings.
-- Use bullet points.
-- Keep notes concise.
-- Highlight important terms using **bold**.
+# 📖 Summary
 
-Example:
+## Main Idea
+- point
+- point
+- point
 
-## Topic
+---
 
-### Key Points
-• Point 1
-• Point 2
+## Important Concepts
+- concept
+- concept
 
-### Important Terms
-• **Term**
+---
+
+## Key Takeaways
+- takeaway
+- takeaway
+
+Keep responses concise and formatted.
 ''';
+
 
       case ChatMode.quiz:
         return '''
-You are a quiz generator.
+You are an educational AI tutor.
 
-FORMAT STRICTLY LIKE THIS:
+Generate quizzes ONLY in this exact format.
 
-# Quiz
+# 📝 QUIZ
 
-## Question 1
-Q: ...
+## Question
+[Question here]
+
+### Options
 A) ...
 B) ...
 C) ...
 D) ...
 
-## Question 2
-Q: ...
-A) ...
-B) ...
-C) ...
-D) ...
+---
 
-## Answers
-1. B
-2. A
-3. C
-4. D
-5. B
+## ✅ Correct Answer
+[Letter + answer]
 
-RULES:
-- Always 5 questions
-- Always 4 options (A,B,C,D)
-- Keep questions short and clear
-- No extra explanation
+---
+
+## 💡 Explanation
+[Short explanation]
+
+Use markdown formatting exactly.
+Do not output raw JSON.
+Do not write long paragraphs.
 ''';
 
       case ChatMode.flashcards:
         return '''
-You are a flashcard generator.
+You are an educational AI tutor.
 
-FORMAT STRICTLY:
+Generate flashcards ONLY in this exact format.
 
-# Flashcards
+# 📚 FLASHCARD 1
 
-## Card 1
-Q: ...
-A: ...
+## ❓ Question
+[Question]
 
-## Card 2
-Q: ...
-A: ...
+---
 
-RULES:
-- Maximum 10 flashcards
-- Keep answers very short
-- No long paragraphs
-- No explanations
+## 💡 Answer
+[Answer]
+
+====================
+
+# 📚 FLASHCARD 2
+
+## ❓ Question
+[Question]
+
+---
+
+## 💡 Answer
+[Answer]
+
+Continue similarly.
+
+Use markdown formatting exactly.
 ''';
 
       case ChatMode.homework:
