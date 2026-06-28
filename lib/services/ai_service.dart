@@ -20,7 +20,9 @@ class AIService {
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${ApiKeys.geminiApiKey}',
       );
 
-      // IMAGE + TEXT
+      // =========================
+      // IMAGE REQUEST
+      // =========================
       if (imageFile != null) {
         print("IMAGE FILE: ${imageFile.path}");
 
@@ -35,86 +37,145 @@ class AIService {
           mimeType = "image/png";
         } else if (path.endsWith(".webp")) {
           mimeType = "image/webp";
-        } else if (path.endsWith(".jpeg")) {
-          mimeType = "image/jpeg";
-        } else if (path.endsWith(".jpg")) {
-          mimeType = "image/jpeg";
         }
 
-        print("MIME TYPE: $mimeType");
-
-        final response = await http.post(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            "contents": [
-              {
-                "parts": [
-                  {
-                    "text":
-                    "$systemPrompt\n\nUser question:\n$message"
-                  },
-                  {
-                    "inline_data": {
-                      "mime_type": mimeType,
-                      "data": base64Image,
-                    }
-                  }
-                ]
-              }
-            ]
-          }),
-        );
-
-        print("IMAGE STATUS: ${response.statusCode}");
-        print("IMAGE RESPONSE:");
-        print(response.body);
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-
-          return data["candidates"][0]["content"]["parts"][0]["text"];
-        }
-
-        return "Error ${response.statusCode}\n${response.body}";
-      }
-
-      // TEXT ONLY
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
+        final body = jsonEncode({
           "contents": [
             {
               "parts": [
                 {
                   "text":
-                  "$systemPrompt\n\nUser:\n$message"
+                  "$systemPrompt\n\nUser question:\n$message"
+                },
+                {
+                  "inline_data": {
+                    "mime_type": mimeType,
+                    "data": base64Image,
+                  }
                 }
               ]
             }
           ]
-        }),
+        });
+
+        var response = await http.post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: body,
+        );
+
+        // Retry once if quota exceeded
+        if (response.statusCode == 429) {
+          await Future.delayed(
+            const Duration(seconds: 35),
+          );
+
+          response = await http.post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: body,
+          );
+        }
+
+        print("IMAGE STATUS: ${response.statusCode}");
+        print(response.body);
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+
+          return data["candidates"][0]
+          ["content"]["parts"][0]["text"];
+        }
+
+        if (response.statusCode == 429) {
+          return '''
+⚠️ StudyAI is receiving too many requests right now.
+
+Please wait about one minute and try again.
+''';
+        }
+
+        return '''
+⚠️ Unable to analyze the image.
+
+Please try another image.
+''';
+      }
+
+      // =========================
+      // TEXT REQUEST
+      // =========================
+      final body = jsonEncode({
+        "contents": [
+          {
+            "parts": [
+              {
+                "text":
+                "$systemPrompt\n\nUser:\n$message"
+              }
+            ]
+          }
+        ]
+      });
+
+      var response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body,
       );
 
+      // Retry once if quota exceeded
+      if (response.statusCode == 429) {
+        await Future.delayed(
+          const Duration(seconds: 35),
+        );
+
+        response = await http.post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: body,
+        );
+      }
+
       print("TEXT STATUS: ${response.statusCode}");
-      print("TEXT RESPONSE:");
       print(response.body);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        return data["candidates"][0]["content"]["parts"][0]["text"];
+        return data["candidates"][0]
+        ["content"]["parts"][0]["text"];
       }
 
-      return "Error ${response.statusCode}\n${response.body}";
+      if (response.statusCode == 429) {
+        return '''
+⚠️ StudyAI is receiving too many requests right now.
+
+Please wait about one minute and try again.
+''';
+      }
+
+      return '''
+⚠️ Something went wrong.
+
+Please try again later.
+''';
     } catch (e) {
       print(e);
-      return "Error: $e";
+
+      return '''
+⚠️ Unable to contact the AI service.
+
+Please check your internet connection and try again.
+''';
     }
   }
 }
